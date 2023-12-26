@@ -192,12 +192,12 @@ Widget _buildMessageItem(DocumentSnapshot document) {
             },
             icon: _isRecordingAudio
                 ? Icon(
-                    Icons.videocam_outlined, // Если идет запись аудио, показываем иконку видеокамеры
+                    Icons.attach_file, // Если идет запись аудио, показываем иконку видеокамеры
                     size: 35, // Размер иконки
                     color: Colors.grey, // Цвет иконки
                   )
                 : Icon(
-                    Icons.mic_outlined, // В противном случае показываем иконку микрофона
+                    Icons.image, // В противном случае показываем иконку микрофона
                     size: 35, // Размер иконки
                     color: Colors.grey, // Цвет иконки
                   ),
