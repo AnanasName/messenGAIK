@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:messenger/components/chat_bubble.dart'; // Подключение виджета пузыря чата
+import 'package:messenger/pages/image_chat_screen.dart';
 import 'package:messenger/services/chat/chat_service.dart'; // Подключение сервиса чата
 import 'package:cloud_firestore/cloud_firestore.dart'; // Подключение Firestore для работы с базой данных в режиме реального времени
 import 'package:firebase_auth/firebase_auth.dart'; // Подключение Firebase Auth для аутентификации пользователей
@@ -199,6 +200,28 @@ class _ChatPageState extends State<ChatPage> {
   // Функция создания виджета для поля ввода сообщений
   Widget _buildMessageInput() {
     return Row(children: [
+      Padding(
+        padding: const EdgeInsets.only(bottom: 13, left: 5),
+        // Отступы для кнопки
+        child: IconButton(
+            onPressed: () {
+              // Обработка нажатия на элемент списка.
+              // При нажатии пользователя отправляют на страницу чата
+              // с передачей данных выбранного пользователя.
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ImageChatScreen(),
+                  ));
+            },
+            icon: const Icon(
+              Icons.image_aspect_ratio,
+              // Если идет запись аудио, показываем иконку видеокамеры
+              size: 35, // Размер иконки
+              color: Colors.grey, // Цвет иконки
+            )),
+      ),
+
       // Все элементы упорядочены в строку
       // Поле для ввода текста
       Expanded(
@@ -265,23 +288,6 @@ class _ChatPageState extends State<ChatPage> {
     setState(() {
       imageUrls = urls;
     });
-
-
-  }
-
-// Функция для просмотра изображения в полноэкранном режиме
-  void _viewImage(String imageUrl) {
-    Navigator.of(context).push(MaterialPageRoute(builder: (_) {
-      return Scaffold(
-        appBar: AppBar(
-          title: Text('Image Viewer'), // Заголовок
-        ),
-// Тело с изображением
-        body: Center(
-          child: Image.network(imageUrl),
-        ),
-      );
-    }));
   }
 
   Future<void> _pickAndUploadImage() async {
@@ -298,6 +304,5 @@ class _ChatPageState extends State<ChatPage> {
     Reference ref = storage.ref().child(fileName); // Ссылка на файл в хранилище
     UploadTask uploadTask = ref.putFile(file); // Задача загрузки файла
     await uploadTask; // Ожидаем конца загрузки
-    String imageUrl = await ref.getDownloadURL(); // Получаем URL изображения
   }
 }
