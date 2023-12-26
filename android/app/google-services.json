@@ -12,7 +12,20 @@
           "package_name": "com.example.messenger"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "125258690979-924uv2g40jar7sml8427s5o4k3p9luqu.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.messenger",
+            "certificate_hash": "dea62775ff1d5924a067a6c522c2c2bd50a75e86"
+          }
+        },
+        {
+          "client_id": "125258690979-7nkrraqcahg7671s09jmqfs4pgrpc7mf.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBBFRRCAX6ypwcABiOJqwlGLH05a1FQsBo"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "125258690979-7nkrraqcahg7671s09jmqfs4pgrpc7mf.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "125258690979-9jf0baaqgco4gttog6dpcm6ps722ptu8.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.messenger"
+              }
+            }
+          ]
         }
       }
     }
