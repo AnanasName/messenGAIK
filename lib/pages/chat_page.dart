@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:messenger/components/chat_bubble.dart'; // Подключение виджета пузыря чата
-import 'package:messenger/pages/image_chat_screen.dart';
 import 'package:messenger/services/chat/chat_service.dart'; // Подключение сервиса чата
 import 'package:cloud_firestore/cloud_firestore.dart'; // Подключение Firestore для работы с базой данных в режиме реального времени
 import 'package:firebase_auth/firebase_auth.dart'; // Подключение Firebase Auth для аутентификации пользователей
@@ -42,6 +41,8 @@ class _ChatPageState extends State<ChatPage> {
       _selectedMessageData; // Переменная для хранения данных выбранного сообщения
   bool _showReactionsMenu =
       false; // Переменная для контроля отображения меню с реакциями
+
+  bool _isImagesLoaded = false;
   final Map<String, String?> _selectedEmojis =
       {}; // Словарь выбранных эмоджи для сообщений
 
@@ -98,7 +99,8 @@ class _ChatPageState extends State<ChatPage> {
               'Error${snapshot.error}'); // Отображение сообщения об ошибке
         }
 
-        if (snapshot.connectionState == ConnectionState.waiting) {
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            !_isImagesLoaded) {
           // Проверка состояния соединения, ждем ли данные
           return const Text(
               'loading...'); // Отображение текста, указывающего на процесс загрузки
@@ -106,12 +108,60 @@ class _ChatPageState extends State<ChatPage> {
         // Создание прокручиваемого списка сообщений, если данные успешно получены
         return ListView(
           // Использование ListView для вывода списка элементов
-          children: snapshot.data!.docs
-              .map((document) => _buildMessageItem(
-                  document)) // Преобразование каждого документа в отдельное сообщение с помощью функции '_buildMessageItem'
-              .toList(), // Преобразование итоговой последовательности в список
+          children: _buildMessagesAndImages(snapshot.data!.docs,
+              imageUrls), // Преобразование итоговой последовательности в список
         );
       },
+    );
+  }
+
+  List<Widget> _buildMessagesAndImages<T>(
+      List<QueryDocumentSnapshot<T>> docs, List<String> imageUrls) {
+    List<Widget> widgets = [];
+
+    widgets
+        .addAll(docs.map((document) => _buildMessageItem(document)).toList());
+
+    widgets.addAll(
+        imageUrls.map((imageUrl) => _buildImageItem(imageUrl)).toList());
+
+    return widgets;
+  }
+
+  Widget _buildImageItem(String imageUrl) {
+    // Возвращаем GestureDetector, чтобы иметь возможность обработать нажатие
+    return GestureDetector(
+      onTap: () {
+        // При тапе переключаем видимость меню с реакциями
+        _viewImage(imageUrl);
+      },
+      // Виджет Padding для отступов внутри элемента, содержащего сообщение
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        // Используем Column для вертикального выравнивания содержимого
+        child: Column(
+          // Выравниваем содержимое справа или слева,
+          // в зависимости от того, отправитель это текущий пользователь или нет
+          crossAxisAlignment: CrossAxisAlignment.end,
+          // Так же для размещения в начале или в конце колонки
+          mainAxisAlignment: MainAxisAlignment.end,
+          // Список виджетов, отображаемых в Column
+          children: [
+            // Отображаем email отправителя
+            Text(FirebaseAuth.instance.currentUser!.email!),
+            // Вставляем небольшой отступ между элементами
+            const SizedBox(
+              height: 5,
+            ),
+            // Создаем пузырек для сообщенияx
+            Image.network(imageUrl, height: 100, width: 100),
+            // Еще один отступ
+            const SizedBox(
+              height: 5,
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -160,7 +210,7 @@ class _ChatPageState extends State<ChatPage> {
             const SizedBox(
               height: 5,
             ),
-            // Создаем пузырек для сообщения
+            // Создаем пузырек для сообщенияx
             ChatBubble(message: data['message']),
             // Еще один отступ
             const SizedBox(
@@ -200,28 +250,6 @@ class _ChatPageState extends State<ChatPage> {
   // Функция создания виджета для поля ввода сообщений
   Widget _buildMessageInput() {
     return Row(children: [
-      Padding(
-        padding: const EdgeInsets.only(bottom: 13, left: 5),
-        // Отступы для кнопки
-        child: IconButton(
-            onPressed: () {
-              // Обработка нажатия на элемент списка.
-              // При нажатии пользователя отправляют на страницу чата
-              // с передачей данных выбранного пользователя.
-              Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ImageChatScreen(),
-                  ));
-            },
-            icon: const Icon(
-              Icons.image_aspect_ratio,
-              // Если идет запись аудио, показываем иконку видеокамеры
-              size: 35, // Размер иконки
-              color: Colors.grey, // Цвет иконки
-            )),
-      ),
-
       // Все элементы упорядочены в строку
       // Поле для ввода текста
       Expanded(
@@ -264,7 +292,8 @@ class _ChatPageState extends State<ChatPage> {
           padding: const EdgeInsets.only(bottom: 20, left: 5),
           // Отступы для кнопки
           child: IconButton(
-              onPressed: sendMessage, // Функция отправки сообщения при нажатии
+              onPressed: sendMessage,
+              // Функция отправки сообщения при нажатии
               icon: const Icon(
                 Icons.arrow_forward_outlined, // Иконка "Стрелка вперед"
                 size: 40, // Размер иконки
@@ -277,6 +306,7 @@ class _ChatPageState extends State<ChatPage> {
 
   Future<void> _loadImages() async {
 // Получаем все файлы в папке 'images/'
+    _isImagesLoaded = false;
     ListResult result = await storage.ref('images/').listAll();
     List<String> urls = []; // Список для URL изображений
     for (var ref in result.items) {
@@ -287,6 +317,7 @@ class _ChatPageState extends State<ChatPage> {
 // Обновляем UI с новым списком URL
     setState(() {
       imageUrls = urls;
+      _isImagesLoaded = true;
     });
   }
 
@@ -304,5 +335,20 @@ class _ChatPageState extends State<ChatPage> {
     Reference ref = storage.ref().child(fileName); // Ссылка на файл в хранилище
     UploadTask uploadTask = ref.putFile(file); // Задача загрузки файла
     await uploadTask; // Ожидаем конца загрузки
+  }
+
+  // Функция для просмотра изображения в полноэкранном режиме
+  void _viewImage(String imageUrl) {
+    Navigator.of(context).push(MaterialPageRoute(builder: (_) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Image Viewer'), // Заголовок
+        ),
+// Тело с изображением
+        body: Center(
+          child: Image.network(imageUrl),
+        ),
+      );
+    }));
   }
 }
